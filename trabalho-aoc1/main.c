@@ -41,11 +41,14 @@ void search(){
 
     }
     printf("%024b\n",mbr);
+
 }
 
 int main()
 {
     search();
+
+    // para o commit
     return 0;
 }
 
