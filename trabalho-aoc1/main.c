@@ -13,13 +13,13 @@ unsigned short int mar, pc = 0;
 unsigned char ir;
 
 
-
+// mapeando os opcodes e designindo valores em decimal
 unsigned char opcode(char *instrucao) {
-    if (strcmp(instrucao, "hlt") == 0) return 0x0;
-    if (strcmp(instrucao, "nop") == 0) return 0x1;
-    if (strcmp(instrucao, "ldr") == 0) return 0x2;
-    if (strcmp(instrucao, "str") == 0) return 0x3;
-    if (strcmp(instrucao, "add") == 0) return 0x4;
+    if (strcmp(instrucao, "hlt") == 0) return 0;
+    if (strcmp(instrucao, "nop") == 0) return 1;
+    if (strcmp(instrucao, "ldr") == 0) return 2;
+    if (strcmp(instrucao, "str") == 0) return 3;
+    if (strcmp(instrucao, "add") == 0) return 4;
     if (strcmp(instrucao, "sub") == 0) return 5;
     if (strcmp(instrucao, "mul") == 0) return 6;
     if (strcmp(instrucao, "div") == 0) return 7;
@@ -49,6 +49,7 @@ unsigned char opcode(char *instrucao) {
     return 255;
 }
 
+// Mapeando registradores e designando seus valores em decimal
 unsigned char registrador_codigo(char *reg) {
     if (strcmp(reg, "r0") == 0) return 0;
     if (strcmp(reg, "r1") == 0) return 1;
@@ -63,7 +64,7 @@ unsigned char registrador_codigo(char *reg) {
 }
 
 
-
+// Lendo o arquivo texto e separando as partes em tokens 
 void preenchendo_memoria(char *nome_arquivo) {
     FILE *arquivo;
     char linha[TAM_LINHA];
@@ -76,20 +77,23 @@ void preenchendo_memoria(char *nome_arquivo) {
 
     while (fgets(linha, TAM_LINHA, arquivo)) {
         linha[strcspn(linha, "\n")] = '\0';
-
+		// Separa o primeiro token opara o enderco da memoria
+		// O segundo para o tipo. (instrucao ou dado)
+		// O terceiro para o conteudo.
         char *endereco_str = strtok(linha, ";");
         char *tipo = strtok(NULL, ";");
         char *conteudo = strtok(NULL, "\n");
 
         if (!endereco_str || !tipo || !conteudo)
             continue;
-
+		// Endereco ja sera armazenado em decimal
         int endereco = atoi(endereco_str);
-
+		
         if (strcmp(tipo, "i") == 0) {
             char *instrucao = strtok(conteudo, " ,");
             char *registrador = strtok(NULL, " ,");
             char *valor = strtok(NULL, " ,");
+            // Armazena na memoria global cada dado a partir do endereco coletado ate ocupatr todos os lugaeres da memoria possiveis.
 
             if (instrucao)
                 memoria[endereco] = (unsigned char*)strdup(instrucao);
@@ -113,7 +117,7 @@ void preenchendo_memoria(char *nome_arquivo) {
 }
 
 
-
+// Converte os dados que estao armazendaos ainda no tipo char em dados decimais.
 void converter_memoria() {
 	int i;
     for ( i = 0; i < TAM_MEMORIA; i++) {
@@ -124,7 +128,7 @@ void converter_memoria() {
 
         unsigned char op = opcode(valor);
         if (op != 255) {
-            memory[i] = op;
+            memory[i] = op; 
             continue;
         }
 
@@ -138,7 +142,7 @@ void converter_memoria() {
     }
 }
 
-
+// Aqui mostra a memoria global com os dados retirados do arquivo texto. ex: add, r0, etc
 
 void exibir_memoria() {
     int i;
@@ -148,12 +152,12 @@ void exibir_memoria() {
         }
     }
 }
-
+// Esta funcao copia os dados da memoria global para a MEMORY usada na cpu
 void exibir_memory_hex() {
     printf("\nMemoria em HEX:\n");
     int i;
     for (i = 0; i < 30; i++) {
-        printf("memory[%d] = %02b\n", i, memory[i]);
+        printf("memory[%d] = %02x\n", i, memory[i]); // Aqui deve ser apresentado os dados em binario mas so conseguir ser  mostrado em hexa
     }
 }
 
@@ -174,6 +178,20 @@ void search() {
         mbr = (mbr << 8) | memory[mar];
         mar++;
         mbr = (mbr << 8) | memory[mar];
+		} else if(ir >= 14 && ir <=20){
+        mar++;
+        mbr = mbr << 8;
+        mbr = mbr | memory[mar];
+        mar++;
+        mbr = mbr << 8;
+        mbr = mbr | memory[mar];
+    } else if(ir >=21 && ir<=29) {
+        mbr = mbr << 8;
+        mar++;
+        mbr = mbr | memory[mar];
+        mbr = mbr << 8;
+        mar++;
+        mbr = mbr | memory[mar];
     }
 
     printf("\nMBR: %08X\n", mbr);
