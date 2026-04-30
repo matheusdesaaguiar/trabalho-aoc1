@@ -13,13 +13,12 @@ unsigned short int mar, pc = 0;
 unsigned char ir;
 
 
-
 unsigned char opcode(char *instrucao) {
-    if (strcmp(instrucao, "hlt") == 0) return 0x0;
-    if (strcmp(instrucao, "nop") == 0) return 0x1;
-    if (strcmp(instrucao, "ldr") == 0) return 0x2;
-    if (strcmp(instrucao, "str") == 0) return 0x3;
-    if (strcmp(instrucao, "add") == 0) return 0x4;
+    if (strcmp(instrucao, "hlt") == 0) return 0;
+    if (strcmp(instrucao, "nop") == 0) return 1;
+    if (strcmp(instrucao, "ldr") == 0) return 2;
+    if (strcmp(instrucao, "str") == 0) return 3;
+    if (strcmp(instrucao, "add") == 0) return 4;
     if (strcmp(instrucao, "sub") == 0) return 5;
     if (strcmp(instrucao, "mul") == 0) return 6;
     if (strcmp(instrucao, "div") == 0) return 7;
@@ -28,7 +27,7 @@ unsigned char opcode(char *instrucao) {
     if (strcmp(instrucao, "and") == 0) return 10;
     if (strcmp(instrucao, "or") == 0) return 11;
     if (strcmp(instrucao, "xor") == 0) return 12;
-    if (strcmp(instrucao, "not") == 0) return 13;
+    if (strcmp(instrucao, "not") == 0) return 13;i
     if (strcmp(instrucao, "je") == 0) return 14;
     if (strcmp(instrucao, "jne") == 0) return 15;
     if (strcmp(instrucao, "jl") == 0) return 16;
@@ -61,8 +60,6 @@ unsigned char registrador_codigo(char *reg) {
 
     return 255;
 }
-
-
 
 void preenchendo_memoria(char *nome_arquivo) {
     FILE *arquivo;
@@ -113,10 +110,8 @@ void preenchendo_memoria(char *nome_arquivo) {
 }
 
 
-
 void converter_memoria() {
-	int i;
-    for ( i = 0; i < TAM_MEMORIA; i++) {
+    for (int i = 0; i < TAM_MEMORIA; i++) {
 
         if (memoria[i] == NULL) continue;
 
@@ -140,20 +135,28 @@ void converter_memoria() {
 
 
 
+void print_bin(unsigned char valor) {
+    for (int i = 7; i >= 0; i--) {
+        printf("%d", (valor >> i) & 1);
+    }
+}
+
+
 void exibir_memoria() {
-    int i;
-	for (i = 0; i < TAM_MEMORIA; i++) {
+    for (int i = 0; i < TAM_MEMORIA; i++) {
         if (memoria[i] != NULL) {
             printf("memoria[%d] = %s\n", i, memoria[i]);
         }
     }
 }
 
-void exibir_memory_hex() {
-    printf("\nMemoria em HEX:\n");
-    int i;
-    for (i = 0; i < 30; i++) {
-        printf("memory[%d] = %02b\n", i, memory[i]);
+void exibir_memory_completo() {
+    printf("\nMemoria (DEC | HEX | BIN):\n");
+
+    for (int i = 0; i < 30; i++) {
+        printf("memory[%d] = %3d | %02X | ", i, memory[i], memory[i]);
+        print_bin(memory[i]);
+        printf("\n");
     }
 }
 
@@ -186,11 +189,11 @@ int main() {
 
     exibir_memoria();
 
-    converter_memoria(); 
+    converter_memoria();
 
-    exibir_memory_hex();
+    exibir_memory_completo();
 
-    search(); 
+    search();
 
     return 0;
 }
