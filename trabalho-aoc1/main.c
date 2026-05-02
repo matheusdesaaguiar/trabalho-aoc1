@@ -9,8 +9,8 @@ unsigned char* memoria[TAM_MEMORIA];
 unsigned char memory[TAM_MEMORIA];
 
 unsigned int mbr;
-unsigned short int mar, pc = 0;
-unsigned char ir;
+unsigned short int mar, pc = 0, reg[8], imm;
+unsigned char ir, ro0, ro1;
 
 
 // mapeando os opcodes e designindo valores em decimal
@@ -64,7 +64,7 @@ unsigned char registrador_codigo(char *reg) {
 }
 
 
-// Lendo o arquivo texto e separando as partes em tokens 
+// Lendo o arquivo texto e separando as partes em tokens
 void preenchendo_memoria(char *nome_arquivo) {
     FILE *arquivo;
     char linha[TAM_LINHA];
@@ -88,7 +88,7 @@ void preenchendo_memoria(char *nome_arquivo) {
             continue;
 		// Endereco ja sera armazenado em decimal
         int endereco = atoi(endereco_str);
-		
+
         if (strcmp(tipo, "i") == 0) {
             char *instrucao = strtok(conteudo, " ,");
             char *registrador = strtok(NULL, " ,");
@@ -128,7 +128,7 @@ void converter_memoria() {
 
         unsigned char op = opcode(valor);
         if (op != 255) {
-            memory[i] = op; 
+            memory[i] = op;
             continue;
         }
 
@@ -157,35 +157,46 @@ void exibir_memory_hex() {
     printf("\nMemoria em HEX:\n");
     int i;
     for (i = 0; i < 30; i++) {
-        printf("memory[%d] = %02x\n", i, memory[i]); // Aqui deve ser apresentado os dados em binario mas so conseguir ser  mostrado em hexa
+        printf("memory[%d] = %08b\n", i, memory[i]); // Aqui deve ser apresentado os dados em binario mas so conseguir ser  mostrado em hexa
     }
 }
 
 
 
-void search() {
-
+void search(){
     mar = pc;
+    // 0000 0000 0000 0000 0000 0000 0000 0000
     mbr = memory[mar];
+    // 0000 0000 0000 0000 0000 0000 0000 0000
+    printf("%024b\n", mbr);
 
     ir = mbr;
+    printf("%i\n", ir);
+    ir = mbr >> 3;
 
+    // hlt nop not
     if(ir == 0 || ir == 1 || ir == 13) {
-        mbr = mbr << 16;
-    } 
-    else if(ir >= 2 && ir <= 29) {
-        mar++;
-        mbr = (mbr << 8) | memory[mar];
-        mar++;
-        mbr = (mbr << 8) | memory[mar];
-		} else if(ir >= 14 && ir <=20){
+        mbr = mbr << 8;
+        mbr = mbr << 8;
+    } else if(ir >=2 && ir <=12) {
+        mbr = mbr << 8;
+        mar ++;
+        mbr = mbr << 8;
+        mbr = mbr | memory[mar];
+        mbr = mbr <<8;
+        mbr = mbr | memory[mar];
+        mbr = mbr <<3;
+    } else if(ir >= 14 && ir <=20){
+        mbr = mbr << 11;
         mar++;
         mbr = mbr << 8;
         mbr = mbr | memory[mar];
         mar++;
+        mbr = mbr | memory[mar];
         mbr = mbr << 8;
         mbr = mbr | memory[mar];
     } else if(ir >=21 && ir<=29) {
+
         mbr = mbr << 8;
         mar++;
         mbr = mbr | memory[mar];
@@ -193,22 +204,52 @@ void search() {
         mar++;
         mbr = mbr | memory[mar];
     }
+    printf("%024b\n",mbr);
 
-    printf("\nMBR: %08X\n", mbr);
+}
+
+void decode()   {
+    if (ir == 0) return;
+    if (ir == 1)return pc++;
+    if (ir == 13) {
+        ro0 = mbr >>11;
+        ro0 = ro0 >>5;
+        return;
+    }
+    if(ir >=2 && ir <=12) {
+        ro0 = mbr >>11;
+        ro0 = ro0 >>5;
+        ro1 = mbr >>8;
+        ro1 = ro1 >>5;
+        return;
+    }
+    if (ir >= 14 && ir <=20) {
+        mar = mbr;
+        return;
+    }
+    if (ir >=21 && ir<=29) {
+        ro0 = mbr >>11;
+        ro0 = ro0 >>5;
+        if(ir == 21 || ir == 22) {
+           mar = mbr;
+           return;
+        }
+        if(ir >=23 && ir <=29) {
+            imm = mbr;
+            return;
+        }
+
+    }
+
 }
 
 
 int main() {
-
     preenchendo_memoria("testee.txt");
-
     exibir_memoria();
-
-    converter_memoria(); 
-
+    converter_memoria();
     exibir_memory_hex();
-
-    search(); 
-
+    search();
+    decode();
     return 0;
 }
