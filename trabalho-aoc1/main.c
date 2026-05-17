@@ -10,7 +10,7 @@ unsigned char memory[TAM_MEMORIA];
 
 unsigned int mbr;
 unsigned short int mar, pc = 0, reg[8], imm;
-unsigned char ir, ro0, ro1;
+unsigned char ir, ro0, ro1, e, l, g;
 
 
 // mapeando os opcodes e designindo valores em decimal
@@ -241,6 +241,30 @@ void decode()   {
 
     }
 
+}
+
+void execute() {
+    if(ir == 0) return;
+    if(ir == 2){
+        reg[ro0] = memory[r01];
+        reg[ro0] = reg[ro0] <<8;
+        reg[ro0] = memory[ro1+1];
+        return;
+    }
+
+    if( ir == 4) {
+        reg[ro0] = reg[ro0] +reg[ro1];
+        return;
+    }
+    if( ir == 6) {
+        reg[ro0] = reg[ro0] *reg[ro1];
+        return;
+    }
+    if( ir == 8) {
+        if(reg[ro0] > reg[ro1]) return g = 1;
+        if(reg[ro0] < reg[ro1]) return l = 1;
+        if(reg[ro0] == reg[ro1]) return e = 1;
+    }
 }
 
 
