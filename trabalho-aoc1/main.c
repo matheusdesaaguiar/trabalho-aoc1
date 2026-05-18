@@ -62,8 +62,6 @@ unsigned char registrador_codigo(char *reg) {
 
     return 255;
 }
-
-
 // Lendo o arquivo texto e separando as partes em tokens
 void preenchendo_memoria(char *nome_arquivo) {
     FILE *arquivo;
@@ -87,7 +85,7 @@ void preenchendo_memoria(char *nome_arquivo) {
         if (!endereco_str || !tipo || !conteudo)
             continue;
 		// Endereco ja sera armazenado em decimal
-        int endereco = atoi(endereco_str);
+        int endereco = (int)strtol(endereco_str, NULL, 16);
 
         if (strcmp(tipo, "i") == 0) {
             char *instrucao = strtok(conteudo, " ,");
@@ -137,8 +135,7 @@ void converter_memoria() {
             memory[i] = reg;
             continue;
         }
-
-        memory[i] = (unsigned char)atoi(valor);
+        memory[i] = (unsigned char)strtol(valor, NULL, 16);
     }
 }
 
@@ -164,15 +161,15 @@ void exibir_memory_hex() {
 
 void exibirCPU() {
     printf("CPU:\n");
-    printf("R0: %d\t R1: %d\t R2: %d\t R3: %d\n", reg[0], reg[1], reg[2], reg[3]);
-    printf("R4: %d\t R5: %d\t R6: %d\t R7: %d\n", reg[4], reg[5], reg[6], reg[7]);
+    printf("R0: %x\t R1: %x\t R2: %x\t R3: %x\n", reg[0], reg[1], reg[2], reg[3]);
+    printf("R4: %d\t R5: %x\t R6: %x\t R7: %x\n", reg[4], reg[5], reg[6], reg[7]);
     printf("MBR: %x\t MAR: %x\t IMM: %x\t PC: %x\n", mbr, mar, imm, pc);
     printf("IR: %x\t RO0: %u\t RO1: %u\n", ir, ro0, ro1);
     printf("E: %u\t L: %u\t G: %u\n", e, l, g);
     printf("Memoria:\n");
 
     for (int i = 0; i < 256; i++){
-        printf("%02d: %0x%02X ",i, memory[i]);
+        printf("%02d: %0x%02d ",i, memory[i]);
         if ((i + 1) % 5 == 0 && i != 256)
         {
             printf("\n");
@@ -275,7 +272,7 @@ void execute() {
         memory[ro1+1] = reg[ro0];
         return;
     }
-    if( ir == 4) {
+    if( ir == 4) { //add
         reg[ro0] = reg[ro0] +reg[ro1];
         return;
     }
@@ -394,12 +391,18 @@ void execute() {
 
 
 int main() {
-    preenchendo_memoria("testee.txt");
-    //exibir_memoria();
+    preenchendo_memoria("programa.txt");
     converter_memoria();
-    // exibir_memory_hex();
+    fflush(stdout);
     exibirCPU();
-    search();
-    decode();
+    getchar();
+    while(1) {
+        search();
+        decode();
+        execute();
+        exibirCPU();
+        getchar();
+    }
+
     return 0;
 }
