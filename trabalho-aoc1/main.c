@@ -245,25 +245,132 @@ void decode()   {
 
 void execute() {
     if(ir == 0) return;
-    if(ir == 2){
-        reg[ro0] = memory[r01];
+    if(ir == 1) return pc++;
+    if(ir == 2){ // ld
+        reg[ro0] = memory[ro1];
         reg[ro0] = reg[ro0] <<8;
         reg[ro0] = memory[ro1+1];
         return;
     }
-
+    if( ir == 3 ) {
+        memory[ro1] = reg[ro0] >> 8;
+        memory[ro1+1] = reg[ro0];
+        return;
+    }
     if( ir == 4) {
         reg[ro0] = reg[ro0] +reg[ro1];
+        return;
+    }
+    if( ir == 5) {
+        reg[ro0] = reg[ro0] - reg[ro1];
         return;
     }
     if( ir == 6) {
         reg[ro0] = reg[ro0] *reg[ro1];
         return;
     }
+    if( ir == 7 ) {
+        reg[ro0] = reg[ro0] / reg[ro1];
+        return;
+    }
     if( ir == 8) {
         if(reg[ro0] > reg[ro1]) return g = 1;
         if(reg[ro0] < reg[ro1]) return l = 1;
         if(reg[ro0] == reg[ro1]) return e = 1;
+    }
+    if( ir == 9) { //movr
+        reg[ro0] = reg[ro1];
+        return;
+    }
+    if( ir == 10) { // and
+        reg[ro0] = reg[ro0] && reg[ro1];
+        return;
+    }
+    if( ir == 11) { // or
+        reg[ro0] = reg[ro0] || reg[ro1];
+        return;
+    }
+
+    if( ir == 12){ // xor
+        reg[ro0] = reg[ro0]^ reg[ro1];
+    }
+    if(ir == 13) { //not
+        reg[ro0] = ~reg[ro0];
+        return;
+    }
+    if( ir == 14 ){ // je
+        if(e == "1"){
+            pc = mar;
+        }
+        return;
+    }
+    if (ir == 15) { //jne
+        if( e =="0") {
+            pc = mar;
+        }
+        return;
+    }
+    if(ir == 16) { // jl
+        if( l == "1") {
+            pc = mar;
+        }
+        return;
+    }
+    if( ir == 17) { // jle
+        if(l == "1" || e == "1") {
+            pc = mar;
+        }
+        return;
+    }
+    if(ir == 18) { //jg
+        if(g == "1") pc = mar;
+        return;
+    }
+    if( ir == 19) { // jge
+        if( g == "1" || e == "1") pc = mar;
+        return;
+    }
+    if ( ir == 20){ // jmp
+        pc = mar;
+        return;
+    }
+    if( ir == 21) { // ld
+        reg[ro0] = memory[mar];
+        reg[ro0] = reg[ro0] << 8;
+        reg[ro0] = memory[mar++];
+        return;
+    }
+    if( ir == 22) { // st
+        memory[mar] = reg[ro0]>>8;
+        memory[mar++] = reg[ro0];
+        return;
+    }
+    if( ir == 23 ){ //movi
+        reg[ro0] = imm;
+        return;
+    }
+    if( ir == 24) { //addi
+        reg[ro0] += imm;
+        return;
+    }
+    if( ir == 25) { //subi
+        reg[ro0] -= imm;
+        return;
+    }
+    if( ir == 26) { //muli
+        reg[ro0] *= imm;
+        return;
+    }
+    if( ir == 27){ //divi
+        reg[ro0] /= imm;
+    }
+    if( ir == 28) {// lsh
+        reg[ro0] = reg[ro0] << imm;
+        return;
+    }
+    if(ir == 29) {//rsh
+        reg[ro0] = reg[ro0] >> imm;
+        return;
     }
 }
 
