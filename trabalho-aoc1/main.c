@@ -162,6 +162,24 @@ void exibir_memory_hex() {
 }
 
 
+void exibirCPU() {
+    printf("CPU:\n");
+    printf("R0: %d\t R1: %d\t R2: %d\t R3: %d\n", reg[0], reg[1], reg[2], reg[3]);
+    printf("R4: %d\t R5: %d\t R6: %d\t R7: %d\n", reg[4], reg[5], reg[6], reg[7]);
+    printf("MBR: %x\t MAR: %x\t IMM: %x\t PC: %x\n", mbr, mar, imm, pc);
+    printf("IR: %x\t RO0: %u\t RO1: %u\n", ir, ro0, ro1);
+    printf("E: %u\t L: %u\t G: %u\n", e, l, g);
+    printf("Memoria:\n");
+
+    for (int i = 0; i < 256; i++){
+        printf("%02d: %0x%02X ",i, memory[i]);
+        if ((i + 1) % 5 == 0 && i != 256)
+        {
+            printf("\n");
+        }
+    }
+    printf("\n\nPressione Enter para iniciar o proximo ciclo de maquina ou aperte CTRL+C para finalizar a execucao do trabalho");
+}
 
 void search(){
     mar = pc;
@@ -377,9 +395,10 @@ void execute() {
 
 int main() {
     preenchendo_memoria("testee.txt");
-    exibir_memoria();
+    //exibir_memoria();
     converter_memoria();
-    exibir_memory_hex();
+    // exibir_memory_hex();
+    exibirCPU();
     search();
     decode();
     return 0;

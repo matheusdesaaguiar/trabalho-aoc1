@@ -1,0 +1,20 @@
+short int vetor[20];
+short int res;
+for(int i = 0; i < 20; i++) {
+	if(vetor[i] > 0x20) {
+		res++;
+	}
+}
+
+0;i;ld r0, D8
+3;i;ld r1, valor 0x20
+6;i;ld r2, valor 0
+9;i;ld r3, valor 20
+12;i;cmp r0, r1
+14;i;jle 18
+16;i;addi r2, 1
+18;i;cmp r2, r3
+
+---- esta errado essa parte de baixo
+20;i;jl inicio do loop
+22;i;hlt
