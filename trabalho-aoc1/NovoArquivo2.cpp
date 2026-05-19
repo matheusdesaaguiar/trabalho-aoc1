@@ -1,0 +1,38 @@
+0;i;ld r5, C2 
+3;i;ld r1, C8 
+6;i;ld r2, C6 
+9;i;ld r3, C4
+12;i;ld r4, CA
+15;i;ldr r0, r5 
+17;i;cmp r0, r1 
+19;i;jle 25 
+22;i;addi r2, 1 
+25;i;cmp r2, r3  
+27;i;add r5, r4
+29;i;jl 15
+32;i;st r2, FE
+35;i;hlt
+C2;d;D8
+C4;d;0
+C6;d;0
+C8;d;20
+CA;d;2
+D8;d;000A
+DA;d;8
+DC;d;15
+DE;d;17
+E0;d;1B
+E2;d;12
+E4;d;13
+E6;d;14
+E8;d;3C
+EA;d;1E
+EC;d;C
+EE;d;B
+F0;d;2
+F2;d;3
+F4;d;5
+F6;d;9
+F8;d;16
+FA;d;15
+FC;d;17
