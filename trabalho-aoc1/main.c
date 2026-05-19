@@ -64,77 +64,81 @@ unsigned char registrador_codigo(char *reg) {
 }
 // Lendo o arquivo texto e separando as partes em tokens
 void preenchendo_memoria(char *nome_arquivo) {
+
     FILE *arquivo;
     char linha[TAM_LINHA];
 
     arquivo = fopen(nome_arquivo, "r");
+
     if (arquivo == NULL) {
-        perror("Erro ao abrir o arquivo");
+        perror("Erro ao abrir arquivo");
         return;
     }
 
     while (fgets(linha, TAM_LINHA, arquivo)) {
+
         linha[strcspn(linha, "\n")] = '\0';
-		// Separa o primeiro token opara o enderco da memoria
-		// O segundo para o tipo. (instrucao ou dado)
-		// O terceiro para o conteudo.
+
         char *endereco_str = strtok(linha, ";");
         char *tipo = strtok(NULL, ";");
         char *conteudo = strtok(NULL, "\n");
 
         if (!endereco_str || !tipo || !conteudo)
             continue;
-		// Endereco ja sera armazenado em decimal
+
         int endereco = (int)strtol(endereco_str, NULL, 16);
 
+        // INSTRUÇÕES
         if (strcmp(tipo, "i") == 0) {
+
             char *instrucao = strtok(conteudo, " ,");
             char *registrador = strtok(NULL, " ,");
             char *valor = strtok(NULL, " ,");
-            // Armazena na memoria global cada dado a partir do endereco coletado ate ocupatr todos os lugaeres da memoria possiveis.
 
             if (instrucao)
-                memoria[endereco] = (unsigned char*)strdup(instrucao);
+                memoria[endereco] = strdup(instrucao);
 
             if (registrador)
-                memoria[endereco + 1] = (unsigned char*)strdup(registrador);
+                memoria[endereco + 1] = strdup(registrador);
 
             if (valor)
-                memoria[endereco + 2] = (unsigned char*)strdup(valor);
+                memoria[endereco + 2] = strdup(valor);
+        }
 
-            if (instrucao && strcmp(instrucao, "hlt") == 0) {
-                break;
-            }
+        // DADOS
+        else if (strcmp(tipo, "d") == 0) {
 
-        } else if (strcmp(tipo, "d") == 0) {
-            memoria[endereco] = (unsigned char*)strdup(conteudo);
+            memoria[endereco] = strdup(conteudo);
         }
     }
 
     fclose(arquivo);
 }
 
-
-// Converte os dados que estao armazendaos ainda no tipo char em dados decimais.
 void converter_memoria() {
-	int i;
-    for ( i = 0; i < TAM_MEMORIA; i++) {
 
-        if (memoria[i] == NULL) continue;
+    for (int i = 0; i < TAM_MEMORIA; i++) {
 
-        char *valor = (char*)memoria[i];
+        if (memoria[i] == NULL)
+            continue;
+
+        char *valor = memoria[i];
 
         unsigned char op = opcode(valor);
+
         if (op != 255) {
             memory[i] = op;
             continue;
         }
 
         unsigned char reg = registrador_codigo(valor);
+
         if (reg != 255) {
             memory[i] = reg;
             continue;
         }
+
+        // HEXADECIMAL
         memory[i] = (unsigned char)strtol(valor, NULL, 16);
     }
 }
@@ -169,7 +173,7 @@ void exibirCPU() {
     printf("Memoria:\n");
 
     for (int i = 0; i < 256; i++){
-        printf("%02d: %0x%02d ",i, memory[i]);
+        printf("%02x: %02x |",i, memory[i]);
         if ((i + 1) % 5 == 0 && i != 256)
         {
             printf("\n");
@@ -193,6 +197,7 @@ void search(){
     if(ir == 0 || ir == 1 || ir == 13) {
         mbr = mbr << 8;
         mbr = mbr << 8;
+        pc= pc++;
     } else if(ir >=2 && ir <=12) {
         mbr = mbr << 8;
         mar ++;
@@ -393,6 +398,7 @@ void execute() {
 int main() {
     preenchendo_memoria("programa.txt");
     converter_memoria();
+    printf("%x\n",memory[0xE2]);
     fflush(stdout);
     exibirCPU();
     getchar();
