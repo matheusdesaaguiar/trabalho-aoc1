@@ -336,7 +336,7 @@ void execute() {
         if(reg[ro0] == reg[ro1])
             e = 1;
 
-        pc += 3;
+        pc += 2;
         return;
     }
 

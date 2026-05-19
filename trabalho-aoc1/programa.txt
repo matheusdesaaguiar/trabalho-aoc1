@@ -4,27 +4,22 @@
 09;i;ld r6,D6
 0C;i;ld r7,D8
 0F;i;ld r4,DA
-
-12;i;ldr r0,r5
+12;i;ldr r0,r5 
 15;i;cmp r0,r1
-18;i;jle 1E
+17;i;jle 1D
 1A;i;addi r2,1
-
-1E;i;addi r6,1
-21;i;add r5,r4
-24;i;cmp r6,r7
-27;i;jl 12
-
-29;i;st r2,FE
-2C;i;hlt
-
+1D;i;addi r6,1
+20;i;add r5,r4
+22;i;cmp r6,r7
+24;i;jl 12
+27;i;st r2,FE
+2A;i;hlt
 D0;d;D8
 D2;d;20
 D4;d;00
 D6;d;00
 D8;d;14
 DA;d;02
-
 DC;d;0A
 DE;d;08
 E0;d;15
