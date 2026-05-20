@@ -6,7 +6,7 @@
 #define TAM_MEMORIA 256
 
 unsigned char* memoria[TAM_MEMORIA];
-unsigned char memory[TAM_MEMORIA]={0};
+unsigned char memory[TAM_MEMORIA]= {0};
 
 unsigned int mbr;
 unsigned short int mar = 0;
@@ -17,7 +17,8 @@ unsigned short int imm = 0;
 unsigned char ir, ro0, ro1;
 unsigned char e = 0, l = 0, g = 0;
 
-unsigned char opcode(char *instrucao) {
+unsigned char opcode(char *instrucao)
+{
 
     if (strcmp(instrucao, "hlt") == 0) return 0;
     if (strcmp(instrucao, "nop") == 0) return 1;
@@ -53,7 +54,8 @@ unsigned char opcode(char *instrucao) {
     return 255;
 }
 
-unsigned char registrador_codigo(char *regis) {
+unsigned char registrador_codigo(char *regis)
+{
 
     if (strcmp(regis, "r0") == 0) return 0;
     if (strcmp(regis, "r1") == 0) return 1;
@@ -67,20 +69,23 @@ unsigned char registrador_codigo(char *regis) {
     return 255;
 }
 
-void preenchendo_memoria(char *nome_arquivo) {
+void preenchendo_memoria(char *nome_arquivo)
+{
 
     FILE *arquivo;
     char linha[TAM_LINHA];
 
     arquivo = fopen(nome_arquivo, "r");
 
-    if (arquivo == NULL) {
+    if (arquivo == NULL)
+    {
 
         perror("Erro ao abrir arquivo");
         return;
     }
 
-    while (fgets(linha, TAM_LINHA, arquivo)) {
+    while (fgets(linha, TAM_LINHA, arquivo))
+    {
 
         linha[strcspn(linha, "\n")] = '\0';
 
@@ -93,7 +98,8 @@ void preenchendo_memoria(char *nome_arquivo) {
 
         int endereco = (int)strtol(endereco_str, NULL, 16);
 
-        if (strcmp(tipo, "i") == 0) {
+        if (strcmp(tipo, "i") == 0)
+        {
 
             char *instrucao = strtok(conteudo, " ,");
             char *registrador = strtok(NULL, " ,");
@@ -109,7 +115,8 @@ void preenchendo_memoria(char *nome_arquivo) {
                 memoria[endereco + 2] = strdup(valor);
         }
 
-        else if (strcmp(tipo, "d") == 0) {
+        else if (strcmp(tipo, "d") == 0)
+        {
 
             memoria[endereco] = strdup(conteudo);
         }
@@ -118,52 +125,164 @@ void preenchendo_memoria(char *nome_arquivo) {
     fclose(arquivo);
 }
 
-void converter_memoria() {
-
+void converter_memoria()
+{
     int i;
 
-    for (i = 0; i < TAM_MEMORIA; i++) {
-
-        if (memoria[i] == NULL)
+    for(i = 0; i < TAM_MEMORIA; i++)
+    {
+        if(memoria[i] == NULL)
             continue;
 
-        char *valor = memoria[i];
+        char *token1 = memoria[i];
 
-        unsigned char op = opcode(valor);
+        unsigned char op = opcode(token1);
 
-        if (op != 255) {
-
-            memory[i] = op;
-            continue;
-        }
-
-        unsigned char regis = registrador_codigo(valor);
-
-        if (regis != 255) {
-
-            memory[i] = regis;
+        // =========================
+        // DADOS
+        // =========================
+        if(op == 255)
+        {
+            memory[i] = (unsigned char)strtol(token1, NULL, 16);
             continue;
         }
 
-        memory[i] = (unsigned char)strtol(valor, NULL, 16);
+        // =========================
+        // HLT / NOP
+        // 8 bits
+        // =========================
+        if(op == 0 || op == 1)
+        {
+            memory[i] = op << 3;
+        }
+
+        // =========================
+        // NOT
+        // opcode(5) reg0(3)
+        // =========================
+        else if(op == 13)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned char instrucao =
+            (op << 3) | r0;
+
+            memory[i] = instrucao;
+
+            i += 1;
+        }
+
+        // =========================
+        // instruções 16 bits
+        // opcode(5) r0(3) r1(3) 00000
+        // =========================
+        else if(op >= 2 && op <= 12)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned char r1 =
+            registrador_codigo(memoria[i + 2]);
+
+            unsigned short instrucao =
+            (op << 11) |
+            (r0 << 8) |
+            (r1 << 5);
+
+            memory[i]     = (instrucao >> 8) & 0xFF;
+            memory[i + 1] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // jumps
+        // opcode(5) 000 endereco(16)
+        // =========================
+        else if(op >= 14 && op <= 20)
+        {
+            unsigned short endereco =
+            (unsigned short)strtol(memoria[i + 1], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            endereco;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // ld / st
+        // opcode(5) r0(3) endereco(16)
+        // =========================
+        else if(op == 21 || op == 22)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned short endereco =
+            (unsigned short)strtol(memoria[i + 2], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            (r0 << 16) |
+            endereco;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // imediatas
+        // opcode(5) r0(3) imm(16)
+        // =========================
+        else if(op >= 23 && op <= 29)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned short imediato =
+            (unsigned short)strtol(memoria[i + 2], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            (r0 << 16) |
+            imediato;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
     }
 }
 
-void exibirCPU() {
+void exibirCPU()
+{
 
     int i;
 
     printf("\n================ CPU ================\n");
 
-    printf("PC : %02X\n", pc);
+    printf("PC : %04X\n", pc);
     printf("IR : %02X\n", ir);
-    printf("MAR: %02X\n", mar);
-    printf("MBR: %02X\n", mbr);
-    printf("IMM: %02X\n", imm);
+    printf("MAR: %04X\n", mar);
+    printf("MBR: %032b\n", mbr);
+    printf("IMM: %04X\n", imm);
 
     printf("\nREGISTRADORES\n");
 
-    for(i = 0; i < 8; i++) {
+    for(i = 0; i < 8; i++)
+    {
 
         printf("R%d: %04X\n", i, reg[i]);
     }
@@ -176,7 +295,8 @@ void exibirCPU() {
 
     printf("\nMEMORIA\n");
 
-    for(i = 0; i < 256; i++) {
+    for(i = 0; i < 256; i++)
+    {
 
         printf("%02X: %02X  ", i, memory[i]);
 
@@ -185,369 +305,499 @@ void exibirCPU() {
     }
 }
 
-void search() {
-
+void search()
+{
     mar = pc;
 
-    ir = memory[pc];
+    unsigned char primeiro_byte = memory[mar];
 
-    printf("\nFETCH\n");
+    // opcode está nos 5 bits mais altos
+    ir = (primeiro_byte >> 3) & 0x1F;
 
-    printf("Opcode carregado: %02X\n", ir);
+    // =========================
+    // instruções 8 bits
+    // =========================
+    if(ir == 0 || ir == 1 || ir == 13)
+    {
+        mbr = memory[mar];
+    }
+
+    // =========================
+    // instruções 16 bits
+    // =========================
+    else if(ir >= 2 && ir <= 12)
+    {
+        mbr =
+        (memory[mar] << 8) |
+        memory[mar + 1];
+    }
+
+    // =========================
+    // instruções 24 bits
+    // =========================
+    else if(ir >= 14 && ir <= 29)
+    {
+        mbr =
+        (memory[mar] << 16) |
+        (memory[mar + 1] << 8) |
+        memory[mar + 2];
+    }
 }
 
-void decode() {
-
-    printf("\nDECODE\n");
-
+void decode()
+{
     ro0 = 0;
     ro1 = 0;
     imm = 0;
 
-    // instrucoes com 2 registradores
-    if((ir >= 2 && ir <= 12) && ir != 13) {
+    // hlt / nop
+    if(ir == 0 || ir == 1)
+        return;
 
-        ro0 = memory[pc + 1];
-        ro1 = memory[pc + 2];
-    }
-
+    // =========================
     // NOT
-    else if(ir == 13) {
-
-        ro0 = memory[pc + 1];
+    // opcode = bits 7-3
+    // ro0    = bits 2-0
+    // =========================
+    if(ir == 13)
+    {
+        ro0 = mbr & 0x07;
+        return;
     }
 
+    // =========================
+    // instruções 16 bits
+    // opcode = 15-11
+    // ro0    = 10-8
+    // ro1    = 7-5
+    // =========================
+    if(ir >= 2 && ir <= 12)
+    {
+        ro0 = (mbr >> 8) & 0x07;
+        ro1 = (mbr >> 5) & 0x07;
+
+        return;
+    }
+
+    // =========================
     // jumps
-    else if(ir >= 14 && ir <= 20) {
+    // opcode = 23-19
+    // endereço = 15-0
+    // =========================
+    if(ir >= 14 && ir <= 20)
+    {
+        mar = mbr & 0xFFFF;
 
-        mar = memory[pc + 1];
+        return;
     }
 
-    // LD e ST
-    else if(ir == 21 || ir == 22) {
+    // =========================
+    // ld/st
+    // opcode = 23-19
+    // ro0    = 18-16
+    // endereço = 15-0
+    // =========================
+    if(ir == 21 || ir == 22)
+    {
+        ro0 = (mbr >> 16) & 0x07;
 
-        ro0 = memory[pc + 1];
-        mar = memory[pc + 2];
+        mar = mbr & 0xFFFF;
+
+        return;
     }
 
+    // =========================
     // imediatas
-    else if(ir >= 23 && ir <= 29) {
+    // opcode = 23-19
+    // ro0    = 18-16
+    // imm    = 15-0
+    // =========================
+    if(ir >= 23 && ir <= 29)
+    {
+        ro0 = (mbr >> 16) & 0x07;
 
-        ro0 = memory[pc + 1];
-        imm = memory[pc + 2];
+        imm = mbr & 0xFFFF;
+
+        return;
     }
-
-    printf("RO0: %u\n", ro0);
-    printf("RO1: %u\n", ro1);
-    printf("MAR: %02X\n", mar);
-    printf("IMM: %02X\n", imm);
 }
-void execute() {
+void execute()
+{
+    printf("Chegou na execucao\n");
+    printf("%032b\n", mbr);
+    if(ir == 0b00000) return; // hlt
+    if(ir == 0b00001){
+        pc+=1;
+        return;
+    } //nop
+    if(ir == 0b00010)  // ldr
+    {
+        reg[ro0] = memory[reg[ro1]] | (memory[reg[ro1] + 1] << 8);
 
-    printf("\nEXECUTE\n");
-
-    // HLT
-    if(ir == 0) {
-
-        printf("HLT\n");
+        pc += 2;
+    }
+    if( ir == 0b00011 )   // str
+    {
+        memory[mar]     = reg[ro0] & 0xFF;
+        memory[mar + 1] = reg[ro0] >> 8;
+        pc += 2;
         return;
     }
-
-    // NOP
-    if(ir == 1) {
-
-        pc += 1;
+    if( ir == 0b00100)   //add
+    {
+        reg[ro0] = reg[ro0] +reg[ro1];
+        pc += 2;
         return;
     }
-
-    // LDR
-    if(ir == 2) {
-
-        reg[ro0] = memory[reg[ro1]];
-
-        pc += 3;
+    if( ir == 0b00101)   // sub
+    {
+        reg[ro0] = reg[ro0] - reg[ro1];
+        pc += 2;
         return;
     }
-
-    // STR
-    if(ir == 3) {
-
-        memory[reg[ro1]] = reg[ro0];
-
-        pc += 3;
+    if( ir == 0b00110)   // mul
+    {
+        reg[ro0] = reg[ro0] *reg[ro1];
+        pc += 2;
         return;
     }
-
-    // ADD
-    if(ir == 4) {
-
-        reg[ro0] += reg[ro1];
-
-        pc += 3;
-        return;
-    }
-
-    // SUB
-    if(ir == 5) {
-
-        reg[ro0] -= reg[ro1];
-
-        pc += 3;
-        return;
-    }
-
-    // MUL
-    if(ir == 6) {
-
-        reg[ro0] *= reg[ro1];
-
-        pc += 3;
-        return;
-    }
-
-    // DIV
-    if(ir == 7) {
-
-        if(reg[ro1] == 0) {
+    if( ir == 0b00111 )   // div
+    {
+        if(reg[ro1] == 0)
+        {
 
             printf("ERRO DIVISAO POR ZERO\n");
+            pc+=2;
             return;
         }
-
-        reg[ro0] /= reg[ro1];
-
-        pc += 3;
+        reg[ro0] = reg[ro0] / reg[ro1];
+        pc += 2;
         return;
     }
-
-    // CMP
-    if(ir == 8) {
-
+    if( ir == 0b01000)   // cmp
+    {
         e = 0;
         l = 0;
         g = 0;
-
-        if(reg[ro0] > reg[ro1])
-            g = 1;
-
-        if(reg[ro0] < reg[ro1])
-            l = 1;
-
-        if(reg[ro0] == reg[ro1])
-            e = 1;
-
-        pc += 2;
+        if(reg[ro0] > reg[ro1]) g = 1;
+        if(reg[ro0] < reg[ro1]) l = 1;
+        if(reg[ro0] == reg[ro1]) e = 1;
+        pc+= 2;
         return;
     }
-
-    // MOVR
-    if(ir == 9) {
-
+    if( ir == 0b01001)   //movr
+    {
         reg[ro0] = reg[ro1];
+        pc+= 2;
+        return;
+    }
+    if( ir == 0b01010)   // and
+    {
+        reg[ro0] = reg[ro0] & reg[ro1];
+        pc+=2;
 
-        pc += 3;
+        return;
+    }
+    if( ir == 0b01011)   // or
+    {
+        reg[ro0] = reg[ro0] | reg[ro1];
+        pc+= 2;
         return;
     }
 
-    // AND
-    if(ir == 10) {
-
-        reg[ro0] &= reg[ro1];
-
-        pc += 3;
+    if( ir == 0b01100)  // xor
+    {
+        reg[ro0] = reg[ro0]^ reg[ro1];
+        pc+=2;
         return;
     }
-
-    // OR
-    if(ir == 11) {
-
-        reg[ro0] |= reg[ro1];
-
-        pc += 3;
-        return;
-    }
-
-    // XOR
-    if(ir == 12) {
-
-        reg[ro0] ^= reg[ro1];
-
-        pc += 3;
-        return;
-    }
-
-    // NOT
-    if(ir == 13) {
-
+    if(ir == 0b01101)   //not
+    {
         reg[ro0] = ~reg[ro0];
-
-        pc += 2;
+        pc +=1;
         return;
     }
-
-    // JE
-    if(ir == 14) {
-
+    if( ir == 0b01110)  // je
+    {
         if(e)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JNE
-    if(ir == 15) {
-
+    if (ir == 0b01111)   //jne
+    {
         if(!e)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JL
-    if(ir == 16) {
-
+    if(ir == 0b10000)   // jl
+    {
         if(l)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JLE
-    if(ir == 17) {
-
+    if( ir == 0b10001)   // jle
+    {
         if(l || e)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JG
-    if(ir == 18) {
-
+    if(ir == 0b10010)   //jg
+    {
         if(g)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JGE
-    if(ir == 19) {
-
-        if(g || e)
+    if( ir == 0b10011)   // jge
+    {
+        if( g || e)
+        {
             pc = mar;
+        }
         else
-            pc += 2;
-
+        {
+            pc+=3;
+        }
         return;
     }
-
-    // JMP
-    if(ir == 20) {
-
+    if ( ir == 0b10100)  // jmp
+    {
         pc = mar;
         return;
     }
 
-    // LD
-    if(ir == 21) {
+    if( ir == 0b10101)   // ld
+    {
+        reg[ro0] = memory[mar] | (memory[mar + 1] << 8);
 
-        reg[ro0] = memory[mar];
-
-        pc += 3;
-        return;
+        pc += 3;;
     }
-
-    // ST
-    if(ir == 22) {
-
-        memory[mar] = reg[ro0];
-
+    if( ir == 0b10110)   // st
+    {
+        memory[reg[ro1]]     = reg[ro0] & 0xFF;
+        memory[reg[ro1] + 1] = reg[ro0] >> 8;
         pc += 3;
-        return;
     }
-
-    // MOVI
-    if(ir == 23) {
-
+    if( ir == 0b10111)  //movi
+    {
         reg[ro0] = imm;
-
         pc += 3;
         return;
     }
-
-    // ADDI
-    if(ir == 24) {
-
+    if( ir == 0b11000)   //addi
+    {
         reg[ro0] += imm;
+        pc+= 3;
+        return;void converter_memoria()
+{
+    int i;
 
-        pc += 3;
-        return;
-    }
+    for(i = 0; i < TAM_MEMORIA; i++)
+    {
+        if(memoria[i] == NULL)
+            continue;
 
-    // SUBI
-    if(ir == 25) {
+        char *token1 = memoria[i];
 
-        reg[ro0] -= imm;
+        unsigned char op = opcode(token1);
 
-        pc += 3;
-        return;
-    }
-
-    // MULI
-    if(ir == 26) {
-
-        reg[ro0] *= imm;
-
-        pc += 3;
-        return;
-    }
-
-    // DIVI
-    if(ir == 27) {
-
-        if(imm == 0) {
-
-            printf("ERRO DIVISAO POR ZERO\n");
-            return;
+        // =========================
+        // DADOS
+        // =========================
+        if(op == 255)
+        {
+            memory[i] = (unsigned char)strtol(token1, NULL, 16);
+            continue;
         }
 
-        reg[ro0] /= imm;
+        // =========================
+        // HLT / NOP
+        // 8 bits
+        // =========================
+        if(op == 0 || op == 1)
+        {
+            memory[i] = op << 3;
+        }
 
-        pc += 3;
-        return;
+        // =========================
+        // NOT
+        // opcode(5) reg0(3)
+        // =========================
+        else if(op == 13)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned char instrucao =
+            (op << 3) | r0;
+
+            memory[i] = instrucao;
+
+            i += 1;
+        }
+
+        // =========================
+        // instruções 16 bits
+        // opcode(5) r0(3) r1(3) 00000
+        // =========================
+        else if(op >= 2 && op <= 12)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned char r1 =
+            registrador_codigo(memoria[i + 2]);
+
+            unsigned short instrucao =
+            (op << 11) |
+            (r0 << 8) |
+            (r1 << 5);
+
+            memory[i]     = (instrucao >> 8) & 0xFF;
+            memory[i + 1] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // jumps
+        // opcode(5) 000 endereco(16)
+        // =========================
+        else if(op >= 14 && op <= 20)
+        {
+            unsigned short endereco =
+            (unsigned short)strtol(memoria[i + 1], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            endereco;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // ld / st
+        // opcode(5) r0(3) endereco(16)
+        // =========================
+        else if(op == 21 || op == 22)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned short endereco =
+            (unsigned short)strtol(memoria[i + 2], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            (r0 << 16) |
+            endereco;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
+
+        // =========================
+        // imediatas
+        // opcode(5) r0(3) imm(16)
+        // =========================
+        else if(op >= 23 && op <= 29)
+        {
+            unsigned char r0 =
+            registrador_codigo(memoria[i + 1]);
+
+            unsigned short imediato =
+            (unsigned short)strtol(memoria[i + 2], NULL, 16);
+
+            unsigned int instrucao =
+            (op << 19) |
+            (r0 << 16) |
+            imediato;
+
+            memory[i]     = (instrucao >> 16) & 0xFF;
+            memory[i + 1] = (instrucao >> 8) & 0xFF;
+            memory[i + 2] = instrucao & 0xFF;
+
+            i += 2;
+        }
     }
-
-    // LSH
-    if(ir == 28) {
-
-        reg[ro0] <<= imm;
-
-        pc += 3;
-        return;
-    }
-
-    // RSH
-    if(ir == 29) {
-
-        reg[ro0] >>= imm;
-
-        pc += 3;
-        return;
-    }
-
-    printf("OPCODE INVALIDO\n");
 }
-int main() {
+    }
+    if( ir == 0b11001)   //subi
+    {
+        reg[ro0] -= imm;
+        pc+=3;
+        return;
+    }
+    if( ir == 0b11010)   //muli
+    {
+        reg[ro0] *= imm;
+        pc+=3;
+        return;
+    }
+    if( ir == 0b11011)  //divi
+    {
+        if(imm == 0)
+        {
+            printf("ERRO DIVISAO POR ZERO\n");
+            pc += 3;
+            return;
+        }
+        reg[ro0] /= imm;
+        pc+=3;
+        return;
+    }
+    if( ir == 0b11100)  // lsh
+    {
+        reg[ro0] = reg[ro0] << imm;
+        pc+=3;
+        return;
+    }
+    if(ir == 0b11101)  //rsh
+    {
+        reg[ro0] = reg[ro0] >> imm;
+        pc+=3;
+        return;
+    }
+}
+
+int main()
+{
 
     preenchendo_memoria("programa.txt");
 
@@ -555,7 +805,8 @@ int main() {
 
     ir = 255;
 
-    while(ir != 0) {
+    while(ir != 0)
+    {
 
         exibirCPU();
 
@@ -564,15 +815,16 @@ int main() {
 
         search();
 
-        printf("\nPRESSIONE ENTER PARA DECODE");
-        getchar();
+        //printf("\nPRESSIONE ENTER PARA DECODE");
+        //getchar();
 
         decode();
 
-        printf("\nPRESSIONE ENTER PARA EXECUTE");
-        getchar();
+        //printf("\nPRESSIONE ENTER PARA EXECUTE");
+        //getchar();
 
         execute();
+
     }
 
     exibirCPU();
